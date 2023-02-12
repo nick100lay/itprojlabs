@@ -81,6 +81,7 @@ class ModelsTestCase(unittest.TestCase):
         Base.metadata.create_all(self.engine)
     
     def tearDown(self):
+        self.session.close()
         Base.metadata.drop_all(self.engine)
 
     def insert_players(self, players):
