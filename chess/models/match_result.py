@@ -1,6 +1,7 @@
 
 
-from sqlalchemy import Column, Integer, SmallInteger, String, ForeignKeyConstraint, CheckConstraint
+from sqlalchemy import Column, Integer, SmallInteger, String, ForeignKeyConstraint, ForeignKey, CheckConstraint
+from sqlalchemy.orm import relationship
 
 from . import Base
 
@@ -12,8 +13,10 @@ class MatchResult(Base):
         ForeignKeyConstraint(["match_id"], ["matches.id"])
     ) 
 
-    match_id = Column(Integer, primary_key=True)
+    match_id = Column(Integer, ForeignKey("matches.id"), primary_key=True)
     
+    match = relationship("Match", back_populates="result", uselist=False)
+
     winner = Column(SmallInteger)
     
     WINNER_TIE = 0
