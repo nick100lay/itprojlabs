@@ -1,5 +1,6 @@
 
 
+import os
 import unittest
 from sqlalchemy import create_engine
 from sqlalchemy.orm import Session
@@ -11,7 +12,7 @@ from . import *
 
 class ModelsTestCase(unittest.TestCase):
 
-    DATABASE_URL = "sqlite:///:memory:"
+    DEFAULT_DATABASE_URL = "sqlite:///:memory:"
 
     PLAYERS = sorted((
         (1, "Магнус", "Карлсен"),
@@ -68,10 +69,14 @@ class ModelsTestCase(unittest.TestCase):
         cursor.execute("PRAGMA foreign_keys=ON")
         cursor.close()
 
+    def get_database_url(self):
+        return os.getenv("TEST_DB_URL", self.DEFAULT_DATABASE_URL)
+
     def setUp(self):
-        self.engine = create_engine(self.DATABASE_URL)
+        db_url = self.get_database_url()
+        self.engine = create_engine(db_url)
         self.session = Session(self.engine)
-        if self.DATABASE_URL.startswith("sqlite"):
+        if db_url.startswith("sqlite"):
             listen(self.engine, "connect", self.set_sqlite_pragma)
         Base.metadata.create_all(self.engine)
     
