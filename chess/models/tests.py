@@ -71,7 +71,8 @@ class ModelsTestCase(unittest.TestCase):
     def setUp(self):
         self.engine = create_engine(self.DATABASE_URL)
         self.session = Session(self.engine)
-        listen(self.engine, "connect", self.set_sqlite_pragma)
+        if self.DATABASE_URL.startswith("sqlite"):
+            listen(self.engine, "connect", self.set_sqlite_pragma)
         Base.metadata.create_all(self.engine)
     
     def tearDown(self):
