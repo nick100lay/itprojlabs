@@ -29,7 +29,7 @@ class ModelsTestCase(unittest.TestCase):
     MATCHES = sorted((
         (1, 1, 2),
         (2, 1, 3),
-        (3, 2, 3),
+        (3, 2, 3)
     ), key=lambda m: m[0])
 
     INVALID_PLAYERS_MATCHES = (
@@ -50,6 +50,11 @@ class ModelsTestCase(unittest.TestCase):
 
     INVALID_MATCH_RESULTS = (
         (100, MatchResult.WINNER_TIE),
+    )
+
+    SAME_MATCH_RESULTS = (
+        (1, MatchResult.WINNER_TIE),
+        (1, MatchResult.WINNER_FIRST),
     )
 
     INVALID_WINNER_MATCH_RESULTS = (
@@ -138,7 +143,7 @@ class ModelsTestCase(unittest.TestCase):
         self.assertRaises(IntegrityError, self.session.commit)
 
     def test_insert_match_results(self):
-        """ Зарегистрировать результаты матча """
+        """ Огласить результаты матча """
         self.commit_example_matches()
         self.insert_match_results(self.MATCH_RESULTS)
         results = self.session.query(MatchResult).order_by("match_id").all()
@@ -149,13 +154,19 @@ class ModelsTestCase(unittest.TestCase):
         )
 
     def test_insert_invalid_match_results(self):
-        """ Попытаться зарегистрировать результаты неизвестного матча """
+        """ Попытаться огласить результаты неизвестного матча """
         self.commit_example_matches()
         self.insert_match_results(self.INVALID_MATCH_RESULTS)
         self.assertRaises(IntegrityError, self.session.commit)
+    
+    def test_insert_same_match_results(self):
+        """ Попытаться огласить результаты одного и того же матча дважды """
+        self.commit_example_matches()
+        self.insert_match_results(self.SAME_MATCH_RESULTS)
+        self.assertRaises(IntegrityError, self.session.commit)
 
     def test_insert_invalid_winner_match_results(self):
-        """ Попытаться зарегистрировать результаты матча с неправильно указанным победителем """
+        """ Попытаться огласить результаты матча с неправильно указанным победителем """
         self.commit_example_matches()
         self.insert_match_results(self.INVALID_WINNER_MATCH_RESULTS)
         self.assertRaises(IntegrityError, self.session.commit)
