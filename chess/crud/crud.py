@@ -1,5 +1,7 @@
 
 
+from functools import wraps
+
 from sqlalchemy import create_engine
 from sqlalchemy.orm import Session
 from sqlalchemy.exc import IntegrityError
@@ -33,6 +35,20 @@ class CRUD:
         self.session.close()
         if drop_all:
             Base.metadata.drop_all(self.engine)
+
+    def __enter__(self):
+        self.start()
+        return self
+    
+    def __exit__(self, *args):
+        self.finish()
+
+    def wrapper(self, func):
+        @wraps(func)
+        def decorator(*args, **kwargs):
+            with self:
+                return func(*args, **kwargs)
+        return decorator
     
     @staticmethod
     def make_player(player_t):
@@ -71,19 +87,31 @@ class CRUD:
 
 
     def create_players(self, players):
-        self.add_all(map(self.make_player, players))
+        players = list(map(self.make_player, players))
+        self.add_all(players)
+        return players
 
     def create_matches(self, matches):
-        self.add_all(map(self.make_match, matches))
+        matches = list(map(self.make_match, matches))
+        self.add_all(matches)
+        return matches
     
     def create_match_results(self, match_results):
-        self.add_all(map(self.make_match_result, match_results))
+        match_results = list(map(self.make_match_result, match_results))
+        self.add_all(match_results)
+        return match_results
     
     def read_players(self):
         return self.query(Player)
     
     def read_matches(self):
         return self.query(Match)
+    
+    def read_current_matches(self):
+        return self.query(Match).filter(Match.result == None)
+    
+    def read_completed_matches(self):
+        return self.query(Match).filter(Match.result != None)
 
     def read_match_results(self):
         return self.query(MatchResult)
