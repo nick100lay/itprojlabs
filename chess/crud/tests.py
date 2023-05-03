@@ -3,7 +3,7 @@
 import os
 import unittest
 
-from . import CRUD, CRUDError, MatchResult
+from . import CRUDProvider, CRUDError, MatchResult
 
 
 class CRUDTestCase(unittest.TestCase):
@@ -62,11 +62,14 @@ class CRUDTestCase(unittest.TestCase):
         return os.getenv("TEST_DB_URL", self.DEFAULT_DATABASE_URL)
 
     def setUp(self):
-        self.crud = CRUD(self.get_database_url())
-        self.crud.start()
+        self.crud_provider = CRUDProvider(self.get_database_url())
+        self.crud_provider.init()
+        self.crud = self.crud_provider.crud()
     
     def tearDown(self):
-        self.crud.finish(drop_all=True)
+        self.crud.close()
+        self.crud_provider.drop_all()
+        self.crud_provider.dispose()
 
 
     def commit_example_players(self):

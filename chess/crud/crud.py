@@ -13,43 +13,22 @@ from ..models import *
 class CRUDError(Exception):
     pass
 
+
 class CRUD:
-
-    def __init__(self, url):
-        self.url = url
-
-    @staticmethod
-    def set_sqlite_pragma(dbapi_connection, connection_record):
-        cursor = dbapi_connection.cursor()
-        cursor.execute("PRAGMA foreign_keys=ON")
-        cursor.close()
-
-    def start(self):
-        self.engine = create_engine(self.url)
-        self.session = Session(self.engine)
-        if self.url.startswith("sqlite"):
-            listen(self.engine, "connect", self.set_sqlite_pragma)
-        Base.metadata.create_all(self.engine)
-
-    def finish(self, drop_all=False):
-        self.session.close()
-        if drop_all:
-            Base.metadata.drop_all(self.engine)
+    
+    def __init__(self, session):
+        self.session = session
 
     def __enter__(self):
-        self.start()
+        self.session.begin()
         return self
-    
-    def __exit__(self, *args):
-        self.finish()
 
-    def wrapper(self, func):
-        @wraps(func)
-        def decorator(*args, **kwargs):
-            with self:
-                return func(*args, **kwargs)
-        return decorator
-    
+    def close(self):
+        self.session.close()
+
+    def __exit__(self, ex_type, ex_val, ex_tb):
+        self.close()
+
     @staticmethod
     def make_player(player_t):
         id = None
@@ -115,3 +94,31 @@ class CRUD:
 
     def read_match_results(self):
         return self.query(MatchResult)
+
+
+class CRUDProvider:
+
+    def __init__(self, url):
+        self.url = url
+
+    @staticmethod
+    def set_sqlite_pragma(dbapi_connection, connection_record):
+        cursor = dbapi_connection.cursor()
+        cursor.execute("PRAGMA foreign_keys=ON")
+        cursor.close()
+
+    def init(self):
+        self.engine = create_engine(self.url)
+        if self.url.startswith("sqlite"):
+            listen(self.engine, "connect", self.set_sqlite_pragma)
+        Base.metadata.create_all(self.engine)
+
+    def drop_all(self):
+        Base.metadata.drop_all(self.engine)
+
+    def dispose(self):    
+        self.engine.dispose()
+        
+    def crud(self):
+        return CRUD(Session(self.engine))
+

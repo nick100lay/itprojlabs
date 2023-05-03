@@ -3,8 +3,9 @@ import os
 from typing import List
 
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 
-from ..crud import CRUD
+from ..crud import CRUDProvider
 from .models import Player, Match, PlayerForPost, MatchForPost, MatchResultForPost
 from . import serializers
 
@@ -21,49 +22,58 @@ def get_database_url():
 
 app = FastAPI()
 
-crud = CRUD(get_database_url())
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"]
+)
+
+crud_provider = CRUDProvider(get_database_url())
+crud_provider.init()
 
 
 @app.get("/players", response_model=List[Player])
-@crud.wrapper
 def read_players():
-    return serializers.serialize_players(crud.read_players().all())
+    with crud_provider.crud() as crud:
+        return serializers.serialize_players(crud.read_players().all())
 
 
 @app.get("/current-matches", response_model=List[Match])
-@crud.wrapper
 def read_current_matches():
-    return serializers.serialize_matches(crud.read_current_matches().all())
+    with crud_provider.crud() as crud:
+        return serializers.serialize_matches(crud.read_current_matches().all())
 
 
 @app.get("/completed-matches", response_model=List[Match])
-@crud.wrapper
 def read_completed_matches():
-    return serializers.serialize_matches(crud.read_completed_matches().all())
+    with crud_provider.crud() as crud:
+        return serializers.serialize_matches(crud.read_completed_matches().all())
 
 
 @app.post("/players", response_model=List[Player])
-@crud.wrapper
 def create_players(players: List[PlayerForPost]):
-    players = crud.create_players(map(lambda ply: (ply.first_name, ply.second_name), players))
-    crud.commit()
-    return serializers.serialize_players(players)
+    with crud_provider.crud() as crud:
+        players = crud.create_players(map(lambda ply: (ply.first_name, ply.second_name), players))
+        crud.commit()
+        return serializers.serialize_players(players)
 
 
 @app.post("/current-matches", response_model=List[Match])
-@crud.wrapper
 def create_current_matches(matches: List[MatchForPost]):
-    matches = crud.create_matches(map(lambda match: (match.first_player_id, match.second_player_id), matches))
-    crud.commit()
-    return serializers.serialize_matches(matches)
+    with crud_provider.crud() as crud:
+        matches = crud.create_matches(map(lambda match: (match.first_player_id, match.second_player_id), matches))
+        crud.commit()
+        return serializers.serialize_matches(matches)
 
 
 @app.post("/completed-matches", response_model=List[Match])
-@crud.wrapper
 def create_completed_matches(match_results: List[MatchResultForPost]):
-    match_results = crud.create_match_results(map(lambda result: (result.match_id, result.winner), match_results))
-    crud.commit()
-    return serializers.serialize_matches(
-        map(lambda result: result.match, match_results)
-    )
+    with crud_provider.crud() as crud:
+        match_results = crud.create_match_results(map(lambda result: (result.match_id, result.winner), match_results))
+        crud.commit()
+        return serializers.serialize_matches(
+            map(lambda result: result.match, match_results)
+        )
 

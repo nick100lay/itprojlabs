@@ -1,3 +1,3 @@
 
 
-from .crud import CRUD, CRUDError, MatchResult
+from .crud import CRUDProvider, CRUDError, MatchResult
