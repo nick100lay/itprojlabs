@@ -23,7 +23,7 @@ class MatchResult(BaseModel):
 
 
 class MatchResultForPost(BaseModel):
-    match_id: str
+    match_id: str = Field(alias="matchId")
     winner: int 
 
     @validator("winner")
@@ -43,5 +43,5 @@ class Match(BaseModel):
 
 
 class MatchForPost(BaseModel):
-    first_player_id: str
-    second_player_id: str
+    first_player_id: str = Field(alias="firstPlayerId")
+    second_player_id: str = Field(alias="secondPlayerId")
